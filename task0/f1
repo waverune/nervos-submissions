@@ -1,0 +1,11 @@
+# head -2 /home/linux/.bashrc
+PS1= From .bashrc --*
+export PS1
+# head -2 /home/linux/.bash_login
+PS1= From .bash_login --*
+export PS1
+head -2 .bash_profile
+PS1= 'From bash_profile --*
+export PS1
+# grep 'PS1=¹ /etc/bashrc
+[ "$PS1" "\\s-\\v\\\$"] && PS1="[\u@\h_\W]\\$"
