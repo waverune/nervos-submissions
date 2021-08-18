@@ -14,7 +14,7 @@
 
 # Repository Link
 
-https://github.com/waverune/nervos-submissions/tree/main/task7/DAPP/postboard
+https://github.com/waverune/nervos-submissions/tree/main/task7/postboard
 
 # Deployed Smart Contract
 
