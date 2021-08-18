@@ -1,0 +1,46 @@
+Keys: Solidity, Javascript, Typescript, web3, Metamask, Godwoken, Ethereum,
+
+// deployed contract address  :
+    0x61fc4564A3A5fF2f3ee0181aBb798064AF2a82b6
+
+
+Contract Methods
+
+ createPost(endTIme, content, title)  args (uint,string,string)
+
+ setGreet(greet)  args (string)
+
+ 
+ // read only methods no gas 
+ 
+ getEndTimeArray() returns uint[]   dont render the post after end time
+
+ readPostCount() returns uint       tot no. of posts
+
+ getGreet()  returns string         dev greetings
+ 
+ 
+#######################################################################################
+
+FIlestructure
+SimpleStorage.sol
+app.tsx
+
+SimpleStorageWrapper.ts >>>>> smart contract interaction
+    Methods:
+        isDeployed
+
+        deploy
+
+        useDeployed
+
+
+    git clone https://github.com/Kuzirashi/blockchain-workshop.git -b godwoken-simple blockchain-workshop-godwoken-simple
+
+
+    ####################################################################################################################################################################################################################
+
+    >read post pc
+    >fetch posts
+    >render posts
+    >
