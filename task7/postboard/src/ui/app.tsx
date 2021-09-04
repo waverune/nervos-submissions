@@ -9,12 +9,18 @@ import Web3 from 'web3';
 import { ToastContainer, toast } from 'react-toastify';
 import './app.scss';
 import 'react-toastify/dist/ReactToastify.css';
+import { CopyToClipboard } from "react-copy-to-clipboard";
+
 
 import { PolyjuiceHttpProvider } from '@polyjuice-provider/web3';
 import { AddressTranslator } from 'nervos-godwoken-integration';
 
 import { PostBoardWrapper } from '../lib/contracts/PostBoardWrapper';
 import { CONFIG } from '../config';
+import * as CompiledContractArtifact from '../../build/contracts/ERC20.json';
+import { CKETH_CONTRACT_ADDRESS, SUDT_CONTRACT_ADDRESS, SudtId } from '../config';
+
+
 
 interface Post {
     id: number;
@@ -52,6 +58,7 @@ async function createWeb3() {
 
 export function App() {
     const [polyjuiceAddress, setPolyjuiceAddress] = useState<string | undefined>();
+
     const [web3, setWeb3] = useState<Web3>(null);
     const [contract, setContract] = useState<PostBoardWrapper>();
     const [accounts, setAccounts] = useState<string[]>();
@@ -67,6 +74,13 @@ export function App() {
     const [title, setTitle] = useState<string | undefined>("default title");
     const [postCount, setPostCount] = useState<number | undefined>()
     const [posts,setPosts] = useState<Post[]>([])
+    const [value, setValue] = useState("My copy text");
+    const [copied, setCopied] = useState(false);
+    const [ckethBalance, setCkethBalance] = useState<string>();
+    const [sudtBalance, setSudtBalance] = useState<string>();
+    const [l2Balance, setL2Balance] = useState<bigint>();
+
+    const [L2depositAddress, setL2depositAddress] = useState<string | undefined>(""); // tryna sset L2depositAddres t8
 
     useEffect(() => {
         if (transactionInProgress && !toastId.current) {
@@ -101,7 +115,7 @@ export function App() {
             setContract(_contract)
             setExistingContractAddress(_contract.address);
 
-            
+
             toast(
                 'Successfully deployed a smart-contract. You can now proceed to get or set the value in a smart contract.',
                 { type: 'success' }
@@ -111,8 +125,8 @@ export function App() {
             toast('There was an error sending your transaction. Please check developer console.');
         } finally {
             setTimeout(()=>{console.log("deploy wait 1 sec"); getPC();console.log(_contract)},2000);
-            
-            
+
+
 
             setTransactionInProgress(false);
         }
@@ -150,7 +164,7 @@ export function App() {
         try {
             const postCount = await contract.readPostCount(account)
             console.log(">>>>>>>>>pc");
-    
+
             console.log(postCount);
             setPostCount(Number(postCount));
 
@@ -222,6 +236,15 @@ export function App() {
         }
     }
 
+    async function ssetL2depositAddress(){
+        const addressTranslator = new AddressTranslator();
+        const L2depositAddress =  addressTranslator.getLayer2DepositAddress(web3, accounts?.[0]); // t8
+        console.log((await L2depositAddress).addressString);
+
+
+    }
+
+
     useEffect(() => {
         if (web3) {
             return;
@@ -241,14 +264,84 @@ export function App() {
             }
         })();
     });
+
     useEffect(() => {
         if (accounts?.[0]) {
             const addressTranslator = new AddressTranslator();
             setPolyjuiceAddress(addressTranslator.ethAddressToGodwokenShortAddress(accounts?.[0]));
+            (async ()=>{
+                const l2DepositAdd = await addressTranslator.getLayer2DepositAddress(web3, accounts?.[0])
+                console.log(l2DepositAdd.addressString)
+                setL2depositAddress(l2DepositAdd.addressString); // t8
+                
+            })()
+            // ssetL2depositAddress();
         } else {
             setPolyjuiceAddress(undefined);
         }
     }, [accounts?.[0]]);
+
+    // useEffect(() => {
+    //     if (accounts?.[0]) {
+    //         const addressTranslator = new AddressTranslator();
+    //         setL2depositAddress(addressTranslator.getLayer2DepositAddress(web3, accounts?.[0]));
+    //         //ssetL2depositAddress();
+
+    //     } else {
+    //         setL2depositAddress(undefined);
+    //     }
+    // }, [accounts?.[0]]);
+    const modifyCketh = (number: string, ndecimals: number) => {
+        if (number.length > ndecimals) {
+            return `${number.substring(0, number.length - ndecimals)}.${number
+                .substring(number.length - ndecimals)
+                .replace(/0+/, '')}`;
+        }
+        const nzeros = ndecimals - number.length;
+        const newnumber = `0.${String('0').repeat(nzeros)}${number.replace(/0+/, '')}`;
+        return newnumber;
+    };
+
+    const changeCkethBalance = async () => {
+        const _contractCketh = new web3.eth.Contract(
+            CompiledContractArtifact.abi as any,
+            CKETH_CONTRACT_ADDRESS
+        );
+
+        const _balanceCketh = await _contractCketh.methods.balanceOf(polyjuiceAddress).call({
+            from: accounts?.[0]
+        });
+
+        setCkethBalance(_balanceCketh);
+    };
+
+    const changeCkbBalance = async () => {
+        const _l2Balance = BigInt(await web3.eth.getBalance(accounts?.[0]));
+        setL2Balance(_l2Balance);
+    };
+
+    const changeSudtBalance = async () => {
+        const _contractSudt = new web3.eth.Contract(
+            CompiledContractArtifact.abi as any,
+            SUDT_CONTRACT_ADDRESS
+        );
+
+        const _balanceSudt = await _contractSudt.methods.balanceOf(polyjuiceAddress).call({
+            from: accounts?.[0]
+        });
+
+        setSudtBalance(_balanceSudt);
+    };
+    const refreshAllUserBalances = async () => {
+        setCkethBalance(undefined);
+        setSudtBalance(undefined);
+        setL2Balance(undefined);
+        await changeCkethBalance();
+        await changeSudtBalance();
+        await changeCkbBalance();
+    };
+
+
 
     const LoadingIndicator = () => <span className="rotating-icon">⚙️</span>;
 
@@ -260,8 +353,36 @@ export function App() {
             <br/>
             Your Polyjuice address: {polyjuiceAddress}
             <br />
+            <p style={{overflowWrap: "break-word"}}>
+            Your L2deposit Address: {L2depositAddress}
+            </p>
+            <CopyToClipboard
+                options={{  message: "" }}
+                text={L2depositAddress}
+                onCopy={() => setCopied(true)}
+            >
+                <button onClick={()=>{window.open("https://force-bridge-test.ckbapp.dev/bridge/Ethereum/Nervos?xchain-asset=0x0000000000000000000000000000000000000000")}}>Copy to L2 Deposit Address to clipboard</button>
+            </CopyToClipboard>
+            <br />
             Deployed contract address: <b>{contract?.address || ' '}</b> <br />
             <br />
+
+            ckEth balance:{' '}
+            <b>
+                {ckethBalance ? modifyCketh(ckethBalance.toString(), 18) : <LoadingIndicator />}{' '}
+                ckETH
+            </b>
+            <br />
+            <br />
+            <br />
+            SUDT balance: <b>{sudtBalance ? (sudtBalance as string) : <LoadingIndicator />}</b>
+            <br />
+            Sudt Id:  <b>{SudtId}</b>
+            <br />
+            <button onClick={refreshAllUserBalances} style={{ marginLeft: '40%' }}>
+                {' '}
+                Refresh Balance
+            </button>
             <div className="rectangle"> </div>
             <br/>
             </div>

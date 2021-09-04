@@ -82,7 +82,7 @@ export class PostBoardWrapper {
         console.log(">>>>>>>>>");
         
         console.log(contract);
-        
+
             //console.log(this.web3.eth.getTransactionReceipt);
 
         //web3.eth.getTransactionReceipt(txHash)
