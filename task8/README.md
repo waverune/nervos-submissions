@@ -10,7 +10,7 @@
 
 # Project Source Code
 
-[source]: https://github.com/waverune/nervos-submissions/tree/main/task7/postboard
+[source](https://github.com/waverune/nervos-submissions/tree/main/task7/postboard)
 
 # The address of the SUDT-ERC20 Proxy Contract
 
